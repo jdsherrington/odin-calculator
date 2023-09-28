@@ -4,37 +4,52 @@ const CALC_TEXT = document.getElementById('calcText');
 DISPLAY_TEXT.textContent = '';
 CALC_TEXT.textContent = '';
 
-let mainDisplay = '',
-    subDisplay = '',
-    buffer = '',
-    numpad = new Object();
-
+let result = undefined;
 
 document.querySelectorAll('.numbtn').forEach(function(numBtn) {
   numBtn.addEventListener('click', function (e) {
+    if (DISPLAY_TEXT.textContent == result) {
+      DISPLAY_TEXT.textContent = '';
+      CALC_TEXT.textContent = '';
+      result = undefined;
+    }
+
     if (numBtn.textContent == '0' && DISPLAY_TEXT.textContent == '0') {
       DISPLAY_TEXT.textContent += '';
-    } else {
-      if (DISPLAY_TEXT.textContent == '0') {
-        DISPLAY_TEXT.textContent = ''
-      }
-      DISPLAY_TEXT.textContent += numBtn.textContent;
+      return;
+
+    } else if (numBtn.textContent == '.' && containsDecimal()) {
+      DISPLAY_TEXT.textContent += '';
+      return;
+
+    } else if (numBtn.textContent == '.' && displayEmpty()) {
+      DISPLAY_TEXT.textContent = '0.';
+      return;
+
+    } else if (numBtn.textContent != '.' && DISPLAY_TEXT.textContent == '0') {
+      DISPLAY_TEXT.textContent = '';
+
     }
+    DISPLAY_TEXT.textContent += numBtn.textContent;
   })
 })
 
 
 document.querySelectorAll('.opbtn').forEach(function(opBtn) {
   opBtn.addEventListener('click', function (e) {
-    if (DISPLAY_TEXT.textContent != '' && DISPLAY_TEXT.textContent != '0') {
-      if (CALC_TEXT.textContent.slice(-1) != ' ') {
-        CALC_TEXT.textContent = DISPLAY_TEXT.textContent;
-        DISPLAY_TEXT.textContent = '';     
-      } else {
-        CALC_TEXT.textContent = CALC_TEXT.textContent.match(/\d+/g)
-
+    if (!calcContainsOp()) {
+      if (!displayEmpty()) {
+        if (DISPLAY_TEXT.textContent[DISPLAY_TEXT.textContent.length - 1] == '.') {
+          CALC_TEXT.textContent = DISPLAY_TEXT.textContent + `0 ${opBtn.value} `;
+        } else {
+          CALC_TEXT.textContent = DISPLAY_TEXT.textContent + ` ${opBtn.value} `;
+        }
+        DISPLAY_TEXT.textContent = '';        
       }
-      CALC_TEXT.textContent += ` ${opBtn.value} `;
+    } else {
+      if (displayEmpty()) {
+        CALC_TEXT.textContent = calcNumbersContent() + ` ${opBtn.value} `;
+      }
     }
   })
 })
@@ -42,13 +57,13 @@ document.querySelectorAll('.opbtn').forEach(function(opBtn) {
 
 document.querySelectorAll('.calcbtn').forEach(function(calcBtn) {
   calcBtn.addEventListener('click', function (e) {
-    if (DISPLAY_TEXT.textContent != '') {
-      let operator = CALC_TEXT.textContent.replace(/[0-9\s]/g, '');
+    if (!displayEmpty()) {
+      
+      let operator = CALC_TEXT.textContent.replace(/[0-9.\s\-]+/g, '');
       console.log(operator);
 
-      let result,
-          x = parseInt(CALC_TEXT.textContent.match(/\d+/g)),
-          y = parseInt(DISPLAY_TEXT.textContent);
+      let x = parseFloat(calcNumbersContent()),
+          y = parseFloat(DISPLAY_TEXT.textContent);
 
       console.log(x);
       console.log(y);
@@ -57,7 +72,7 @@ document.querySelectorAll('.calcbtn').forEach(function(calcBtn) {
         case "+":
           result = calcAdd(x, y);
           break;
-        case "-":
+        case "–":
           result = calcSubtract(x, y);
           break;
         case "x":
@@ -67,10 +82,12 @@ document.querySelectorAll('.calcbtn').forEach(function(calcBtn) {
           result = calcDivide(x, y);
           break;
       }
+
+      console.log(result);
       
       if (calcBtn.textContent == '=') {
         DISPLAY_TEXT.textContent = result;
-        CALC_TEXT.textContent = '';
+        CALC_TEXT.textContent = `${x} ${operator} ${y} =`;
       } else {
         DISPLAY_TEXT.textContent = '';
         CALC_TEXT.textContent = result + ` ${calcBtn.value} `;
@@ -83,13 +100,37 @@ document.querySelectorAll('.calcbtn').forEach(function(calcBtn) {
 document.getElementById('clear').onclick = () =>{
   DISPLAY_TEXT.textContent = '';
   CALC_TEXT.textContent = '';
+  result = undefined;
 }
 
 
 document.getElementById('backspace').onclick = () =>{
+  if (DISPLAY_TEXT.textContent == result) {
+      DISPLAY_TEXT.textContent = '';
+      CALC_TEXT.textContent = '';
+      result = undefined;
+    }
+
   if (DISPLAY_TEXT.textContent != '') {
     DISPLAY_TEXT.textContent = DISPLAY_TEXT.textContent.slice(0, -1);
   }
+}
+
+function containsDecimal() {
+  let periodCount = (DISPLAY_TEXT.textContent.match(/\./g) || []).length;
+  return (periodCount > 0);
+}
+
+function displayEmpty() {
+  return (DISPLAY_TEXT.textContent == '');
+}
+
+function calcContainsOp() {
+  return (CALC_TEXT.textContent.replace(/[0-9.\s\-]+/g, '') != '');
+}
+
+function calcNumbersContent() {
+  return CALC_TEXT.textContent.match(/-?\d+(\.\d+)?/g).join('');
 }
 
 
@@ -106,8 +147,5 @@ function calcMultiply(x, y) {
 }
 
 function calcDivide(x, y) {
-  // if (isNan(x / y)) {
-  //   return "Infinity";
-  // }
   return (x / y);
 }
