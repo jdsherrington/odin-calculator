@@ -4,14 +4,19 @@ const CALC_TEXT = document.getElementById('calcText');
 DISPLAY_TEXT.textContent = '';
 CALC_TEXT.textContent = '';
 
+let x, y;
 let result = undefined;
 
 document.querySelectorAll('.numbtn').forEach(function(numBtn) {
   numBtn.addEventListener('click', function (e) {
-    if (DISPLAY_TEXT.textContent == result) {
+    if (DISPLAY_TEXT.textContent == result || containsInvalid()) {
       DISPLAY_TEXT.textContent = '';
       CALC_TEXT.textContent = '';
       result = undefined;
+    }
+
+    if (containsInvalid()) {
+      result = 0;
     }
 
     if (numBtn.textContent == '0' && DISPLAY_TEXT.textContent == '0') {
@@ -38,7 +43,7 @@ document.querySelectorAll('.numbtn').forEach(function(numBtn) {
 document.querySelectorAll('.opbtn').forEach(function(opBtn) {
   opBtn.addEventListener('click', function (e) {
     if (!calcContainsOp()) {
-      if (!displayEmpty()) {
+      if (!displayEmpty() && !containsInvalid() && !resultInvalid()) {
         if (DISPLAY_TEXT.textContent[DISPLAY_TEXT.textContent.length - 1] == '.') {
           CALC_TEXT.textContent = DISPLAY_TEXT.textContent + `0 ${opBtn.value} `;
         } else {
@@ -49,7 +54,7 @@ document.querySelectorAll('.opbtn').forEach(function(opBtn) {
     } else {
       if (displayEmpty()) {
         CALC_TEXT.textContent = calcNumbersContent() + ` ${opBtn.value} `;
-      }
+      } 
     }
   })
 })
@@ -57,41 +62,58 @@ document.querySelectorAll('.opbtn').forEach(function(opBtn) {
 
 document.querySelectorAll('.calcbtn').forEach(function(calcBtn) {
   calcBtn.addEventListener('click', function (e) {
-    if (!displayEmpty()) {
-      
-      let operator = CALC_TEXT.textContent.replace(/[0-9.\s\-]+/g, '');
-      console.log(operator);
+    if (!displayEmpty()) { 
+      if (CALC_TEXT.textContent != '' && !containsInvalid() && !resultInvalid()) {
+        let operator = CALC_TEXT.textContent.replace(/[0-9.=\s\-]+/g, '');
+              console.log("operator: " + operator);
 
-      let x = parseFloat(calcNumbersContent()),
+        if (DISPLAY_TEXT.textContent != result && !containsInvalid()) {
+          x = parseFloat(calcNumbersContent());
           y = parseFloat(DISPLAY_TEXT.textContent);
+        }
 
-      console.log(x);
-      console.log(y);
+        console.log("x: " + x);
+        console.log("y: " + y);
 
-      switch (operator) {
-        case "+":
-          result = calcAdd(x, y);
-          break;
-        case "–":
-          result = calcSubtract(x, y);
-          break;
-        case "x":
-          result = calcMultiply(x, y);
-          break;
-        case "/":
-          result = calcDivide(x, y);
-          break;
+        switch (operator) {
+          default:
+            return;
+          case "+":
+            result = calcAdd(x, y);
+            break;
+          case "–":
+            result = calcSubtract(x, y);
+            break;
+          case "x":
+            result = calcMultiply(x, y);
+            break;
+          case "/":
+            result = calcDivide(x, y);
+            break;
+        }
+        
+        console.log("result: " + result);
+        
+        if (calcBtn.textContent == '=') {
+          if (containsInvalid() || resultInvalid()) {
+            DISPLAY_TEXT.textContent = result;
+            CALC_TEXT.textContent = '';
+            result = undefined;
+          } else {
+            DISPLAY_TEXT.textContent = result; 
+            CALC_TEXT.textContent = `${x} ${operator} ${y} =`;
+          }
+        } else {
+          if (containsInvalid() || resultInvalid()) {
+            DISPLAY_TEXT.textContent = result;
+            CALC_TEXT.textContent = '';
+            result = undefined;
+          } else {
+            DISPLAY_TEXT.textContent = '';
+            CALC_TEXT.textContent = result + ` ${calcBtn.value} `;
+          }
+        }
       }
-
-      console.log(result);
-      
-      if (calcBtn.textContent == '=') {
-        DISPLAY_TEXT.textContent = result;
-        CALC_TEXT.textContent = `${x} ${operator} ${y} =`;
-      } else {
-        DISPLAY_TEXT.textContent = '';
-        CALC_TEXT.textContent = result + ` ${calcBtn.value} `;
-      } 
     }
   })
 })
@@ -105,7 +127,7 @@ document.getElementById('clear').onclick = () =>{
 
 
 document.getElementById('backspace').onclick = () =>{
-  if (DISPLAY_TEXT.textContent == result) {
+  if (DISPLAY_TEXT.textContent == result || containsInvalid()) {
       DISPLAY_TEXT.textContent = '';
       CALC_TEXT.textContent = '';
       result = undefined;
@@ -114,6 +136,14 @@ document.getElementById('backspace').onclick = () =>{
   if (DISPLAY_TEXT.textContent != '') {
     DISPLAY_TEXT.textContent = DISPLAY_TEXT.textContent.slice(0, -1);
   }
+}
+
+function containsInvalid() {
+  return (DISPLAY_TEXT.textContent == 'Infinity' || DISPLAY_TEXT.textContent == 'NaN');
+}
+
+function resultInvalid() {
+  return (result == 'Infinity' || result !== result);
 }
 
 function containsDecimal() {
@@ -126,7 +156,7 @@ function displayEmpty() {
 }
 
 function calcContainsOp() {
-  return (CALC_TEXT.textContent.replace(/[0-9.\s\-]+/g, '') != '');
+  return (CALC_TEXT.textContent.replace(/[0-9.=\s\-]+/g, '') != '');
 }
 
 function calcNumbersContent() {
